@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CA Graph</title>
+    <meta
+      name="description"
+      content="Interactive graph of the Web PKI: root and intermediate certificate authorities disclosed to CCADB, and how they chain to each other."
+    />
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='7' r='5' fill='%23eb6834'/><circle cx='7' cy='24' r='4' fill='%232a78d6'/><circle cx='25' cy='24' r='4' fill='%232a78d6'/><path d='M16 7L7 24M16 7l9 17' stroke='%2352514e' stroke-width='2'/></svg>" />
+  </head>
+  <body>
+    <div id="graph" aria-label="Graph of certificate authorities"></div>
+
+    <div class="sidebar">
+    <header class="card controls">
+      <h1>CA Graph</h1>
+      <p class="subtitle">Root and intermediate certificate authorities of the Web PKI, as disclosed to CCADB.</p>
+
+      <div class="search">
+        <label class="visually-hidden" for="search">Search certificate authorities</label>
+        <input id="search" type="search" placeholder="Search a CA or owner…" autocomplete="off" spellcheck="false" />
+        <ul id="suggestions" role="listbox" hidden></ul>
+      </div>
+
+      <div class="filters">
+        <label>
+          <span>Used for</span>
+          <select id="filter-use">
+            <option value="1" selected>TLS (websites)</option>
+            <option value="2">S/MIME (email)</option>
+            <option value="4">Code signing</option>
+            <option value="15">Anything</option>
+          </select>
+        </label>
+        <label>
+          <span>Trusted by</span>
+          <select id="filter-store">
+            <option value="15" selected>Any browser / OS</option>
+            <option value="1">Mozilla</option>
+            <option value="2">Chrome</option>
+            <option value="4">Apple</option>
+            <option value="8">Microsoft</option>
+            <option value="0">Include untrusted</option>
+          </select>
+        </label>
+        <label class="wide">
+          <span>Country</span>
+          <select id="filter-country">
+            <option value="" selected>Any country</option>
+          </select>
+        </label>
+        <label class="check">
+          <input id="filter-revoked" type="checkbox" />
+          <span>Show revoked</span>
+        </label>
+      </div>
+      <p id="hint" class="hint" hidden>
+        CCADB only records what a CA is used for while it is trusted and not revoked. Set “Used for” to
+        <em>Anything</em> to see untrusted and revoked CAs.
+      </p>
+      <p id="stats" class="muted"></p>
+    </header>
+
+    <section class="card legend" aria-label="Legend">
+      <h2>Operator</h2>
+      <ul id="legend-owners"></ul>
+      <ul class="legend-shapes">
+        <li><span class="swatch diamond"></span>Root CA</li>
+        <li><span class="swatch circle"></span>Intermediate CA</li>
+        <li class="muted">Size: number of CAs below it</li>
+      </ul>
+    </section>
+    </div>
+
+    <aside id="panel" class="card panel" hidden aria-live="polite"></aside>
+
+    <footer class="card footer muted" id="footer"></footer>
+
+    <div id="loading" class="loading">Loading graph…</div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

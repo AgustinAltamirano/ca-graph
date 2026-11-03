@@ -1,0 +1,28 @@
+{
+  "name": "ca-graph",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Interactive graph of the Web PKI (root and intermediate CAs) built from CCADB data",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "data:fetch": "tsx scripts/fetch-ccadb.ts",
+    "data:build": "tsx scripts/build-graph.ts"
+  },
+  "dependencies": {
+    "graphology": "^0.26.0",
+    "sigma": "^4.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "csv-parse": "^7.0.3",
+    "graphology-layout-forceatlas2": "^0.10.1",
+    "graphology-layout-noverlap": "^0.4.2",
+    "graphology-types": "^0.24.8",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5"
+  }
+}
