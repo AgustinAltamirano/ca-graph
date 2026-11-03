@@ -1,6 +1,6 @@
 graph.json, published alongside this file, is derived from the Common CA
-Database (CCADB) "All Certificate Records" report
-(https://www.ccadb.org/resources). CCADB makes its data available under the
+Database (CCADB) "All Certificate Records" and revoked intermediate
+certificates reports (https://www.ccadb.org/resources). CCADB makes its data available under the
 Community Data License Agreement - Permissive, Version 2.0, reproduced below
 (see https://www.ccadb.org/rootstores/usage). This project is not affiliated
 with or endorsed by CCADB.

@@ -375,6 +375,10 @@ button:focus-visible {
   border-color: currentColor;
 }
 
+.critical {
+  color: var(--critical);
+}
+
 .badge.bad {
   color: var(--critical);
   border-color: currentColor;

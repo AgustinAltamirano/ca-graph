@@ -1,6 +1,6 @@
 // Detail panel for a selected CA.
 
-import { STORE_NAMES, USE, type GraphData, type GraphNode } from "./types.ts";
+import { STORE_NAMES, USE, type CertRecord, type GraphData, type GraphNode } from "./types.ts";
 
 const USE_LABELS: [number, string][] = [
   [USE.TLS, "TLS"],
@@ -8,6 +8,22 @@ const USE_LABELS: [number, string][] = [
   [USE.CODE, "Code signing"],
   [USE.OTHER, "Not recorded"],
 ];
+
+// RFC 5280 CRLReason names, as CCADB writes them.
+const REASONS: Record<string, string> = {
+  unspecified: "Unspecified",
+  keyCompromise: "Key compromise",
+  cACompromise: "CA key compromise",
+  affiliationChanged: "Affiliation changed",
+  superseded: "Superseded",
+  cessationOfOperation: "Cessation of operation",
+  certificateHold: "Certificate hold",
+  removeFromCRL: "Remove from CRL",
+  privilegeWithdrawn: "Privilege withdrawn",
+  aACompromise: "AA compromise",
+};
+const COMPROMISE = new Set(["keyCompromise", "cACompromise", "aACompromise"]);
+const reasonLabel = (r: string) => REASONS[r] ?? r;
 
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -44,7 +60,7 @@ export function renderPanel(el: HTMLElement, index: number, ctx: PanelContext) {
     </div>
     <div class="badges">
       <span class="badge">${n.r ? "Root CA" : "Intermediate CA"}</span>
-      ${n.rv ? '<span class="badge bad">Revoked</span>' : ""}
+      ${n.rv ? `<span class="badge bad">${esc(revokedBadge(n))}</span>` : ""}
     </div>
     <div class="badges" aria-label="Trusted by">${storeBadges}</div>
     <dl class="facts">
@@ -68,6 +84,21 @@ export function renderPanel(el: HTMLElement, index: number, ctx: PanelContext) {
   el.scrollTop = 0;
 }
 
+// "Revoked", plus the reason when every revoked certificate of the CA shares one.
+function revokedBadge(n: GraphNode) {
+  const reasons = new Set(n.c.filter((c) => c.rv === "Revoked").map((c) => c.rr ?? ""));
+  const [only] = reasons;
+  return reasons.size === 1 && only ? `Revoked: ${reasonLabel(only)}` : "Revoked";
+}
+
+function revocation(c: CertRecord) {
+  if (c.rv !== "Revoked") return esc(c.rv);
+  const parts = [c.rd ? `Revoked on ${c.rd}` : "Revoked"];
+  parts.push(c.rr ? `reason: ${esc(reasonLabel(c.rr))}` : "no reason given");
+  const text = parts.join(", ");
+  return c.rr && COMPROMISE.has(c.rr) ? `<strong class="critical">${text}</strong>` : text;
+}
+
 function linkList(title: string, list: number[], nodes: GraphNode[]) {
   if (!list.length) return "";
   const sorted = [...list].sort((a, b) => nodes[b].d - nodes[a].d || nodes[a].l.localeCompare(nodes[b].l));
@@ -82,7 +113,7 @@ function linkList(title: string, list: number[], nodes: GraphNode[]) {
   return `<h3>${title} (${list.length})</h3><ul class="links">${items}${more}</ul>`;
 }
 
-function certCard(c: GraphData["nodes"][number]["c"][number]) {
+function certCard(c: CertRecord) {
   const statuses = STORE_NAMES.map((name, i) => `${name}: ${esc(c.st[i] || "—")}`).join(" · ");
   return `
     <div class="cert">
@@ -90,7 +121,7 @@ function certCard(c: GraphData["nodes"][number]["c"][number]) {
       <dl class="facts">
         <dt>Valid</dt><dd>${c.f} → ${c.t}</dd>
         ${c.p ? `<dt>Signed by</dt><dd>${esc(c.pn)}</dd>` : ""}
-        ${c.rv ? `<dt>Revocation</dt><dd>${esc(c.rv)}</dd>` : ""}
+        ${c.rv ? `<dt>Revocation</dt><dd>${revocation(c)}</dd>` : ""}
         ${c.tc ? "<dt>Constraints</dt><dd>Technically constrained</dd>" : ""}
         <dt>Status</dt><dd>${statuses}</dd>
         <dt>SHA-256</dt><dd class="fingerprint"><a href="https://crt.sh/?q=${c.h}" target="_blank" rel="noopener">${c.h}</a></dd>

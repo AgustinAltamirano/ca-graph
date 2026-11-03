@@ -33,6 +33,8 @@ Only certificates that had not expired on the data download date are included.
 - CCADB records a country per CA Owner, as free text. The build normalises the
   spellings and gives each CA its operator's country when the operator is also
   a CA Owner, and the CA Owner's country otherwise.
+- Revocation reasons and dates only exist for intermediates, and CCADB lists no
+  reason for some of them (the panel says "no reason given").
 - Unlike the 2012 Tree of Trust, there is no count of end-entity (website)
   certificates per CA: CCADB does not track that.
 
@@ -53,14 +55,16 @@ The processed graph lives in `public/graph.json` and is committed to the repo.
 To refresh it:
 
 ```bash
-npm run data:fetch   # downloads the CCADB CSV into data/raw/ (git-ignored)
+npm run data:fetch   # downloads the CCADB CSVs into data/raw/ (git-ignored)
 npm run data:build   # writes public/graph.json (takes ~30 s for the layout)
 ```
 
-The source report is CCADB's
+The main source is CCADB's
 [All Certificate Records, V4a](https://ccadb.my.salesforce-sites.com/ccadb/AllCertificateRecordsCSVFormatV4a),
-which excludes CA certificates that expired more than five years ago. The layout
-(ForceAtlas2) is seeded, so rebuilding the same CSV gives the same picture.
+which excludes CA certificates that expired more than five years ago. The
+[revoked intermediate certificates report](https://ccadb.my.salesforce-sites.com/mozilla/PublicIntermediateCertsRevokedWithPEMCSV)
+adds the revocation reason and date, joined by SHA-256 fingerprint. The layout
+(ForceAtlas2) is seeded, so rebuilding the same CSVs gives the same picture.
 
 ## Deploying to GitHub Pages
 
@@ -82,7 +86,8 @@ public/graph.json        processed data
 
 ## Data licence
 
-`public/graph.json` is derived from CCADB's All Certificate Records report.
+`public/graph.json` is derived from CCADB's All Certificate Records and revoked
+intermediate certificates reports.
 CCADB makes its data available under the
 [Community Data License Agreement – Permissive 2.0](https://cdla.dev/permissive-2-0/)
 and asks for attribution to CCADB in derived works

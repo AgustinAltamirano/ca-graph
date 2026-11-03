@@ -2,7 +2,7 @@
 // issuer -> subject link, with a precomputed ForceAtlas2 layout.
 // Run with: npm run data:build
 
-import { readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "csv-parse/sync";
@@ -14,6 +14,7 @@ import { STORE, USE, type CertRecord, type GraphData, type GraphEdge, type Graph
 const CCADB_URL = "https://ccadb.my.salesforce-sites.com/ccadb/AllCertificateRecordsCSVFormatV4a";
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const csvPath = resolve(root, "data/raw/ccadb-all-certificate-records-v4a.csv");
+const revokedPath = resolve(root, "data/raw/ccadb-revoked-intermediates.csv");
 const outPath = resolve(root, "public/graph.json");
 
 type Row = Record<string, string>;
@@ -23,6 +24,26 @@ const dataDate = statSync(csvPath).mtime.toISOString().slice(0, 10);
 
 // CCADB dates look like "2038.01.13".
 const isoDate = (d: string) => d.replaceAll(".", "-");
+
+// Revocation reason and date come from a second report (revoked intermediates),
+// keyed by SHA-256. Its reasons look like "(2) cACompromise", dates "2026 Oct 18".
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const revocations = new Map<string, { rr?: string; rd?: string }>();
+if (existsSync(revokedPath)) {
+  const revokedRows: Row[] = parse(readFileSync(revokedPath), { columns: true, bom: true, skip_empty_lines: true });
+  for (const r of revokedRows) {
+    const reason = r["RFC 5280 Revocation Reason Code"].replace(/^\(\d+\)\s*/, "").trim();
+    const m = r["Date of Revocation"].match(/^(\d{4}) (\w{3}) (\d{1,2})$/);
+    const date = m ? `${m[1]}-${String(MONTHS.indexOf(m[2]) + 1).padStart(2, "0")}-${m[3].padStart(2, "0")}` : "";
+    revocations.set(r["SHA-256 Fingerprint"].toUpperCase(), {
+      ...(reason && { rr: reason }),
+      ...(date && { rd: date }),
+    });
+  }
+  console.log(`${revokedRows.length} records in the revoked intermediates report`);
+} else {
+  console.warn(`${revokedPath} not found: revocation reasons will be missing (run npm run data:fetch)`);
+}
 
 // Keep certificates that are still within their validity period on the data date.
 // Revoked ones stay in (flagged) so the page can show them on demand.
@@ -114,6 +135,7 @@ for (const [key, certs] of groups) {
       f: isoDate(r["Valid From (GMT)"]),
       t: isoDate(r["Valid To (GMT)"]),
       rv: r["Revocation Status"],
+      ...revocations.get(r["SHA-256 Fingerprint"].toUpperCase()),
       tc: r["Technically Constrained"] === "true",
       st: STORE_COLUMNS.map((col) => r[col]) as CertRecord["st"],
     }))

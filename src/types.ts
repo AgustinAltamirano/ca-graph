@@ -24,6 +24,10 @@ export interface CertRecord {
   t: string;
   /** Revocation status: "", "Not Revoked", "Revoked", "Parent Cert Revoked" */
   rv: string;
+  /** RFC 5280 revocation reason (e.g. "cACompromise"), when CCADB has one */
+  rr?: string;
+  /** Revocation date, YYYY-MM-DD, when CCADB has one */
+  rd?: string;
   /** Technically constrained */
   tc: boolean;
   /** Status in [Mozilla, Chrome, Apple, Microsoft], as written by CCADB */
